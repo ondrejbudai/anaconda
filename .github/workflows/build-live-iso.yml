@@ -61,7 +61,6 @@ jobs:
       - name: Make a repository
         shell: bash
         run: |
-          set -x
           mkdir repo
           #tar xf rpms.tar -C repo
           docker build -t iso-builder .
@@ -82,7 +81,7 @@ jobs:
           [[ $(composer-cli --json compose info "${compose_id}" | jq -r ".[].body.queue_status") =~ FINISHED ]] || exit 1
           
           composer-cli compose image "${compose_id}" --filename /builds/live.iso
-          
+          chmod 666 /builds/live.iso
 
       - name: Upload the image
         uses: actions/upload-artifact@v3
