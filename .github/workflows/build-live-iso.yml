@@ -38,7 +38,7 @@ jobs:
       - name: Upload the RPMs
         uses: actions/upload-artifact@v3
         with:
-          name: rpms
+          name: rpms.tar
           path: rpms.tar
           retention-days: 1
   iso:
@@ -55,8 +55,7 @@ jobs:
       - name: Download the RPMs
         uses: actions/download-artifact@v3
         with:
-          name: rpms
-          path: rpms.tar
+          name: rpms.tar
 
       - name: Make a repository
         shell: bash
