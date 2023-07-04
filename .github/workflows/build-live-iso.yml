@@ -62,7 +62,7 @@ jobs:
         shell: bash
         run: |
           mkdir repo
-#          tar xf rpms.tar -C repo
+          #tar xf rpms.tar -C repo
           docker build -t iso-builder .
           docker run --rm --detach --privileged --name iso-builder -v /builds:/builds iso-builder
           sleep 5
