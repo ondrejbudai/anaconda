@@ -70,6 +70,8 @@ jobs:
           
           docker-exec journalctl -af &
           
+          cat my-image.toml | docker-exec tee my-image.toml
+          
           composer-cli blueprints push my-image.toml
           compose_id=$(composer-cli --json compose start my-image live-installer | jq -r ".[].body.build_id")
           while [[ $(composer-cli --json compose info "${compose_id}" | jq -r ".[].body.queue_status") =~ RUNNING|WAITING ]]; do sleep 15; done
