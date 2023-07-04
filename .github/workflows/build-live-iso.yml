@@ -61,6 +61,7 @@ jobs:
       - name: Make a repository
         shell: bash
         run: |
+          set -x
           mkdir repo
           #tar xf rpms.tar -C repo
           docker build -t iso-builder .
