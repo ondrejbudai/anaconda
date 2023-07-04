@@ -69,7 +69,7 @@ jobs:
           docker-exec () { docker exec -t iso-builder "$@"; }
           composer-cli () { docker-exec composer-cli "$@"; }
           
-          docker-exec journalctl -af &
+#          docker-exec journalctl -af &
           
           cat my-image.toml | docker-exec tee my-image.toml
           
