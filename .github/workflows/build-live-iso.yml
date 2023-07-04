@@ -67,7 +67,7 @@ jobs:
           docker build -t iso-builder .
           docker run --rm --detach --privileged --name iso-builder -v /builds:/builds iso-builder
           sleep 5
-          docker-exec () { docker exec -t iso-builder "$@"; }
+          docker-exec () { docker exec -i iso-builder "$@"; }
           composer-cli () { docker-exec composer-cli "$@"; }
           
           #docker-exec journalctl -af &
