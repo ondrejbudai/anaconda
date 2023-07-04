@@ -1,0 +1,94 @@
+name: Build live ISO
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - "*" # yolo
+
+permissions:
+  contents: read
+
+jobs:
+  rpms:
+    env:
+      CONTAINER_TAG: 'lorax'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.pr-info.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Build anaconda-rpm container (for RPM build)
+        run: |
+          # set static tag to avoid complications when looking what tag is used
+          make -f ./Makefile.am anaconda-rpm-build CI_TAG=$CONTAINER_TAG
+
+      - name: Build Anaconda RPM files
+        run: |
+          # output of the build will be stored in ./result/build/01-rpm-build/*.rpm
+          make -f ./Makefile.am container-rpms-scratch CI_TAG=$CONTAINER_TAG
+          mkdir -p ./anaconda_rpms/
+          cp -av ./result/build/01-rpm-build/*.rpm ./anaconda_rpms/
+          tar cvf rpms.tar -C anaconda_rpms .
+
+      - name: Upload the RPMs
+        uses: actions/upload-artifact@v3
+        with:
+          name: rpms
+          path: rpms.tar
+          retention-days: 1
+  iso:
+    needs:
+      - rpms
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.pr-info.outputs.sha }}
+          fetch-depth: 0
+
+      - name: Download the RPMs
+        uses: actions/download-artifact@v3
+        with:
+          name: rpms
+          path: rpms.tar
+
+      - name: Make a repository
+        shell: bash
+        run: |
+          dnf install -y createrepo_c
+          mkdir repo
+          tar xf rpms.tar -C repo
+          createrepo_c repo
+          docker build -t iso-builder .
+          docker run --rm --detach --privileged --name iso-builder -v /builds:/builds iso-builder
+          sleep 5
+          docker-exec () { docker exec -t iso-builder "$@"; }
+          composer-cli () { docker-exec composer-cli "$@"; }
+          
+          docker-exec journalctl -af &
+          
+          composer-cli blueprints push my-image.toml
+          compose_id=$(composer-cli --json compose start my-image live-installer | jq -r ".[].body.build_id")
+          while [[ $(composer-cli --json compose info "${compose_id}" | jq -r ".[].body.queue_status") =~ RUNNING|WAITING ]]; do sleep 15; done
+          
+          # check whether the build succeeded
+          [[ $(composer-cli --json compose info "${compose_id}" | jq -r ".[].body.queue_status") =~ FINISHED ]] || exit 1
+          
+          composer-cli compose image "${compose_id}" --filename /builds/live.iso
+          
+
+      - name: Upload the image
+        uses: actions/upload-artifact@v3
+        with:
+          name: live.iso
+          path: /builds/live.iso
+          retention-days: 1
+          
+          
+          
