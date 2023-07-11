@@ -80,6 +80,7 @@ jobs:
           [[ $(composer-cli --json compose info "${compose_id}" | jq -r ".[].body.queue_status") =~ FINISHED ]] || exit 1
           
           composer-cli compose image "${compose_id}" --filename /builds/live.iso
+          ls -l /builds/live.iso
           chmod 666 /builds/live.iso
 
       - name: Upload the image
